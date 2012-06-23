@@ -38,6 +38,8 @@ def getch():
 
 def main():
 	"""
+	Main
+	On keypress, sends robot commands to daemon.
 	"""
 	context = zmq.Context()
 
