@@ -18,9 +18,13 @@ stats:
 
 ### MAIN BUILD TARGET #############
 
-robotd: source/main.cpp
+robotd: source/main.cpp Serial.o
 	@echo "[compile] main"
 	@$(CD) ./build && $(C) $(INC) -c ../source/main.cpp
-	@$(L) build/main.o $(LIBS) -o robotd
+	@$(L) build/*.o $(LIBS) -o robotd
 	@chmod +x robotd
+
+Serial.o: source/Serial.hpp source/Serial.cpp
+	@echo "[compile serial]"
+	@$(CD) ./build && $(C) $(INC) -c ../source/Serial.cpp
 
