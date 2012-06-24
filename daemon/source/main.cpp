@@ -2,12 +2,37 @@
 #include <zmq.hpp>
 #include <string>
 #include <iostream>
+#include <stdexcept>
 //#include <unistd.h>
 #include <stdio.h> // TODO: Remove
 
 #include <cstdlib>
 #include <cstring> // TODO: Ugh, remove
 #include "Serial.hpp"
+
+/**
+ * Try to open one of the first ten serial ports.
+ */
+Serial* openSerial()
+{
+	Serial* s = 0;
+	
+	for(int i = 0; i < 10; i++) {
+		s = new Serial(i);
+		try {
+			std::cout << "Opening serial on #" << i << std::endl;
+			s->open();
+		}
+		catch(const std::runtime_error& e) {
+			std::cerr << "Could not open serial on #" << i << std::endl;
+			delete s;
+			s = 0;
+			continue;
+		}
+		break;
+	}
+	return s;
+}
 
 int main(int argc, char** argv)
 {
@@ -16,42 +41,19 @@ int main(int argc, char** argv)
     zmq::socket_t socket(context, ZMQ_REP);
     socket.bind("tcp://*:5555");
 
-	Serial* robot = new Serial();
-	robot->open();
+	Serial* robot = 0;
 
-	int counter = 0;
+	robot = openSerial();
 
-	/*while(1) {
-		std::string msg("");
-		switch(counter) {
-			case 0:
-				msg = "mogo 1:50 2:50\r";
-				break;
-			case 1:
-				msg = "mogo 1:-50 2:50\r";
-				break;
-			case 3:
-				msg = "mogo 1:50 2:-50\r";
-				break;
-			case 4:
-				msg = "mogo 1:-50 2:-50\r";
-				break;
-			case 5:
-				msg = "mogo 1:0 2:0\r";
-				break;
-			default:
-				msg = "mogo 1:0 2:0\r";
-				counter = -1;
-		}
-		counter++;
-		printf("Writing to serial... %s\n", msg.c_str());
-
-		robot->write(msg);
-		sleep(3);
+	if(!robot) {
+		std::cerr << "Couldn't open USB Serial. Shutting down." << std::endl;
+		return EXIT_FAILURE;
 	}
 
-	return EXIT_SUCCESS;*/
-
+	// TODO: This is going to have to be a whole lot more robust. ie, 
+	// 		 auto shutdown of the motors, heuristics, direct control vs 
+	// 		 custom protocol (in JSON), etc. 
+	// TODO: Should the serial motor control be a separate thread? 
 	while(1) 
 	{
         zmq::message_t request;
