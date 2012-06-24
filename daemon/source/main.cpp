@@ -38,6 +38,7 @@ Serial* openSerial()
 // FIXME: No globals! 
 Serial* robot = 0;
 time_t lastCommand; // XXX: Not working
+timespec shutdownTime; // XXX: BETTER?
 pthread_mutex_t lastCommandMutex = PTHREAD_MUTEX_INITIALIZER;
 
 /**
@@ -71,7 +72,15 @@ void* ZmqServerThread(void* n)
 		timespec now;
 		clock_gettime(CLOCK_REALTIME, &now);
 		pthread_mutex_lock(&lastCommandMutex);
-		lastCommand = now.tv_sec; 
+		//lastCommand = now.tv_sec; 
+
+		// Try this instead. Give 100ms of leeway. 
+		//shutdownTime = now;
+		clock_gettime(CLOCK_REALTIME, &shutdownTime);
+		//std::cout << "Sec: " << shutdownTime.tv_sec << std::endl;
+		//std::cout << "Nsec: " << shutdownTime.tv_nsec << std::endl;
+		shutdownTime.tv_nsec += 1000 * 2000;
+		shutdownTime.tv_sec += 5;
 		pthread_mutex_unlock(&lastCommandMutex);
 
 
@@ -114,7 +123,7 @@ void* ZmqServerThread(void* n)
 void* TimeThread(void* n)
 {
 	timespec now;
-	time_t then;
+	timespec shutdown;
 
 	while(1) {
 		clock_gettime(CLOCK_REALTIME, &now);
@@ -123,22 +132,25 @@ void* TimeThread(void* n)
 
 		// TODO - move into own class
 		pthread_mutex_lock(&lastCommandMutex);
-		then = lastCommand;
+		shutdown = shutdownTime;
 		pthread_mutex_unlock(&lastCommandMutex);
 
-		// Shutdown motors for not being actively controlled
-		if(now.tv_sec - then >= 1) {
-			std::cout << "SHUT DOWN MOTORS" << std::endl;
-			robot->write("mogo 1:0 2:0\r");
+		std::cout << "Now:\t\t" << now.tv_nsec << std::endl;
+		std::cout << "Shutdown:\t" << shutdown.tv_nsec << std::endl;
+		std::cout << std::endl;
 
-			// DO NOT FLOOD SERIAL WITH SHUTDOWN COMMANDS!
-			// Here's an easy hack not to ...
-			sleep(1); 
+		// Shutdown motors for not being actively controlled
+		//if(now.tv_sec - then >= 1) {
+		if(now.tv_sec >= shutdownTime.tv_sec && 
+		   now.tv_nsec > shutdownTime.tv_nsec) {
+				std::cout << "SHUT DOWN MOTORS" << std::endl;
+				robot->write("mogo 1:0 2:0\r");
+
+				// DO NOT FLOOD SERIAL WITH SHUTDOWN COMMANDS!
+				// Here's an easy hack not to ...
+				sleep(1); 
 		}
 		else {
-			std::cout << "Now: " << now.tv_sec << std::endl;
-			std::cout << "Then: " << then << std::endl;
-			std::cout << std::endl;
 		}
 
 	}
