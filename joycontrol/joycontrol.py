@@ -89,6 +89,8 @@ def main():
 
 				# Triangle, Circle, X, Square (respectively)
 				elif i in [12, 13, 14, 15]:
+					socket.send("e") # Stop motors
+					message = socket.recv()
 					continue
 
 			#joystick_handle(e)

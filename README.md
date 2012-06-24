@@ -9,12 +9,13 @@ much more robust robot platform that can benefit from quick prototyping.
 A central control daemon (written in C++) listens on port `TBD` for
 instructions and relays them to the robot. 
 
-Hardware Support
-================
+Robot Hardware Support
+----------------------
 
 Currently I am working with the Robotics Connection Serializer, but I plan to
 do work with Arduino in the near future. In the end I aim to support both
 platforms. 
+
 
 Components Included
 -------------------
@@ -41,10 +42,27 @@ API Documentation
 
 _TODO_. Considering JSON protocol. 
 
+Gamepad Support in Unix
+-----------------------
+
+**PS3**
+
+For PS3 Sixaxis controller support, compile the 
+[QtSixA](http://qtsixa.sourceforge.net/) library.
+From there, Sixaxis controllers work out of the box over bluetooth.
+
+**Xbox 360**
+
+_TODO_
+
+**Wii**
+
+_TODO_
+
 License
 =======
 
-Copyright (c) 2012 Brandon Thomas
+Copyright (c) 2008-2010, 2012 Brandon Thomas
 
 * http://possibilistic.org
 * echelon@gmail.com 
