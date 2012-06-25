@@ -52,6 +52,9 @@ void* ZmqServerThread(void* n)
     zmq::socket_t socket(context, ZMQ_REP);
     socket.bind("tcp://*:5555");
 
+	std::string lastCommandType = ""; // FIXME: Meh
+	timespec lastCommandTime;
+
 	// TODO: This is going to have to be a whole lot more robust. ie, 
 	// 		 auto shutdown of the motors, heuristics, direct control vs 
 	// 		 custom protocol (in JSON), etc. 
@@ -88,23 +91,33 @@ void* ZmqServerThread(void* n)
 
 		if(!strcmp(d, "w")) {
 			msg = "mogo 1:50 2:50\r";
+			lastCommandType = "w";
 		}
 		else if(!strcmp(d, "s")) {
 			msg = "mogo 1:-50 2:-50\r";
+			lastCommandType = "s";
 		}
 		else if(!strcmp(d, "a")) {
 			msg = "mogo 1:50 2:-50\r"; // TODO: Not sure of direction
+			lastCommandType = "a";
 		}
 		else if(!strcmp(d, "d")) {
 			msg = "mogo 1:-50 2:50\r";
+			lastCommandType = "d";
 		}
 		else if(!strcmp(d, "e")) {
 			msg = "mogo 1:0 2:0\r";
+			lastCommandType = "e";
 		}
 
 		if(msg.length()) {
 			printf("Writing %s\n", msg.c_str());
-			robot->write(msg);
+
+			// Make sure we don't flood the robot with a constant stream
+			if(now.tv_sec - lastCommandTime.tv_sec > 0) {
+				robot->write(msg);
+				lastCommandTime = now;
+			}
 		}
 
         //  Send reply back to client
