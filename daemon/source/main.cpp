@@ -151,7 +151,7 @@ void* ZmqServerThread(void* n)
  */
 void* TimeThread(void* n)
 {
-	int MSECONDS_TIMEOUT = 400;
+	int MSECONDS_TIMEOUT = 300;
 	timespec lastWritten_command;
 	timespec lastWritten_timeout;
 	std::string lastCommand("");
@@ -178,15 +178,22 @@ void* TimeThread(void* n)
 
 		// Commands.
 		if(m.length()) {
-			std::cout << "messg" << std::endl;
 
-			if(msec_elapsed(lastWritten_command, 300)) {
+			if(msec_elapsed(lastWritten_command, 100)) {
+
+				std::cout << "messg if (time)" << std::endl;
+
 				robot_send_command(m.c_str());
 				clock_gettime(CLOCK_REALTIME, &lastWritten_command);
 			}
 			else if(lastCommand.compare(m)) {
+
+				std::cout << "messg elseif (compare str)" << std::endl;
+
 				robot_send_command(m.c_str());
 				clock_gettime(CLOCK_REALTIME, &lastWritten_command);
+			}
+			else {
 			}
 			lastCommand = m;
 			lastCommandType = COMMAND_FROM_NETWORK;

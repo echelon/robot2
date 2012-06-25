@@ -21,6 +21,8 @@ A work in progress.
 
 # FIXME/TODO ******
 # Joystick control is going to need far longer timeouts for shutdown.
+# XXX: Actually, no. There is no maintained 'keydown' event. Events only fire 
+# once! I'll need to write the script to be mindful of that!
 
 import sys
 import pygame

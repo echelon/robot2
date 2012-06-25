@@ -4,8 +4,10 @@ Grab keyboard presses and relay them as instructions to the robot.
 
 Key combinations for movement:
 	* wasd (classic)
-	* hjkl (vim-like)
-	* up, down, left, right
+	* hjkl (vim-like)				-- TODO
+	* up, down, left, right			-- TODO
+	* e (stop motors)
+	* q (stop motors and exit script)
 
 Questions: 
 	* Should the script ramp up speed the longer something is pressed, 
@@ -19,8 +21,11 @@ A work in progress.
 """
 
 import sys
-#import select # XXX: Investigate 'select' library. 
+import pygame
 from zmq_connect import *
+
+# XXX: The 'pause' when switching keytypes is due to the keyboard delay
+# Whenever a new key is pressed, the terminal causes a short pause. 
 
 def getch():
 	"""
@@ -48,12 +53,51 @@ def main():
 	while True:
 		ch = getch()
 		if ch in ['q', 'Q']:
+			socket.send('e')
+			socket.recv()
 			sys.exit()
 
-		socket.send(ch)
-		
-		#  Get the reply.
-		message = socket.recv()
-		print "Received reply [", message, "]"
+		print "Input: %s" % ch
 
-if __name__ == '__main__': main()
+		socket.send(ch)
+		socket.recv()
+
+def main_pygame():
+	"""
+	Main (using Pygame)
+	On key event, send robot commands to daemon.
+	"""
+
+	socket = connect_robot_daemon()
+
+	def send_robot(ch):
+		socket.send(ch)
+		socket.recv()
+
+	print 'Input keypresses; \'q\' to exit.'
+
+	pygame.init()
+	#pygame.display.init()
+	screen = pygame.display.set_mode((640, 480))
+	pygame.display.set_caption('Untitled')
+
+	while True:
+		pygame.event.pump()
+		e = pygame.key.get_pressed()
+
+		if e[pygame.K_w]:
+			send_robot('w')
+		elif e[pygame.K_a]:
+			send_robot('a')
+		elif e[pygame.K_s]:
+			send_robot('s')
+		elif e[pygame.K_d]:
+			send_robot('d')
+		elif e[pygame.K_e]:
+			send_robot('e')
+		elif e[pygame.K_q]:
+			print "Exiting..."
+			send_robot('e')
+			sys.exit()
+
+if __name__ == '__main__': main_pygame()
