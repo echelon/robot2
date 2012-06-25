@@ -40,30 +40,12 @@ Serial* robot = 0;
 /**
  * Stuff to keep track of commands and timeouts.
  */
-timespec timeLastCommand;
-timespec timeLastTimeout;
-std::string lastCommandStr;
-pthread_mutex_t tlMutex = PTHREAD_MUTEX_INITIALIZER;
-
 enum LastCommand { 
 	COMMAND_FROM_NETWORK, 
 	COMMAND_FROM_TIMEOUT
 };
 
 LastCommand lastCommandType = COMMAND_FROM_TIMEOUT;
-
-
-
-// TODO TODO TODO -- better idea. Only one thread controls the motors
-// This one thread will read the controller/input state as it is saved
-// by the ZeroMQ thread into some structure. 
-
-/**
- * These are the old ones
- */
-time_t lastCommand; // XXX: Not working
-timespec shutdownTime; // XXX: BETTER?
-pthread_mutex_t lastCommandMutex = PTHREAD_MUTEX_INITIALIZER;
 
 /**
  * See if a number of milliseconds has elapsed since the timestamp.
@@ -91,6 +73,10 @@ std::string messageStr = "";
 timespec messageTime;
 
 
+/**
+ * Send a robot a simple motor command.
+ * Inputs are 'wasd' and 'e'. 
+ */
 void robot_send_command(const char* msg)
 {
 	std::string command = "";
@@ -153,50 +139,6 @@ void* ZmqServerThread(void* n)
         zmq::message_t reply(5);
         memcpy((void *)reply.data(), "messg", 5);
         socket.send(reply);
-
-		/*
-		if(!strcmp(d, "w")) {
-			msg = "mogo 1:10 2:10\r";
-			commandType = "w";
-		}
-		else if(!strcmp(d, "s")) {
-			msg = "mogo 1:-10 2:-10\r";
-			commandType = "s";
-		}
-		else if(!strcmp(d, "a")) {
-			msg = "mogo 1:10 2:-10\r"; // TODO: Not sure of direction
-			commandType = "a";
-		}
-		else if(!strcmp(d, "d")) {
-			msg = "mogo 1:-10 2:10\r";
-			commandType = "d";
-		}
-		else if(!strcmp(d, "e")) {
-			msg = "mogo 1:0 2:0\r";
-			commandType = "e";
-		}
-
-		int MSECONDS_TIMEOUT = 300;
-
-		if(msg.length()) {
-			if(lastCommandType == COMMAND_FROM_TIMEOUT) {
-				std::cout << ">>> Start Command" << std::endl;
-				robot->write(msg);
-				clock_gettime(CLOCK_REALTIME, &timeLastCommand_written);
-			}
-			// Make sure we don't flood the robot with a constant stream
-			if(msec_elapsed(timeLastCommand_written, MSECONDS_TIMEOUT)) {
-				std::cout << ">>> Command" << std::endl;
-				robot->write(msg);
-				clock_gettime(CLOCK_REALTIME, &timeLastCommand_written);
-			}
-			// TODO: Just put in one if. For now it's debugging. 
-			else if(commandType.compare(commandType_old)) { 
-				std::cout << ">>> New command" << std::endl;
-				robot->write(msg);
-				clock_gettime(CLOCK_REALTIME, &timeLastCommand_written);
-			}
-		}*/
     }
 
 	pthread_exit(0);
@@ -249,27 +191,6 @@ void* TimeThread(void* n)
 			lastCommand = m;
 			lastCommandType = COMMAND_FROM_NETWORK;
 		}
-
-
-		/*if(msg.length()) {
-			if(lastCommandType == COMMAND_FROM_TIMEOUT) {
-				std::cout << ">>> Start Command" << std::endl;
-				robot->write(msg);
-				clock_gettime(CLOCK_REALTIME, &timeLastCommand_written);
-			}
-			// Make sure we don't flood the robot with a constant stream
-			if(msec_elapsed(timeLastCommand_written, MSECONDS_TIMEOUT)) {
-				std::cout << ">>> Command" << std::endl;
-				robot->write(msg);
-				clock_gettime(CLOCK_REALTIME, &timeLastCommand_written);
-			}
-			// TODO: Just put in one if. For now it's debugging. 
-			else if(commandType.compare(commandType_old)) { 
-				std::cout << ">>> New command" << std::endl;
-				robot->write(msg);
-				clock_gettime(CLOCK_REALTIME, &timeLastCommand_written);
-			}
-		}*/
 	}
 
 	pthread_exit(0);
