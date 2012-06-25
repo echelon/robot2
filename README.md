@@ -51,6 +51,12 @@ For PS3 Sixaxis controller support, compile the
 [QtSixA](http://qtsixa.sourceforge.net/) library.
 From there, Sixaxis controllers work out of the box over bluetooth.
 
+* `sixad` starts the service
+* `qtsixa` can configure individual device profiles, functions, features, etc.
+
+Note: Remove xorg joystick input packages to prevent it from aliasing the
+mouse.
+
 **Xbox 360**
 
 _TODO_
