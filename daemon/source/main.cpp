@@ -151,7 +151,7 @@ void* ZmqServerThread(void* n)
  */
 void* TimeThread(void* n)
 {
-	int MSECONDS_TIMEOUT = 300;
+	int MSECONDS_TIMEOUT = 200;
 	timespec lastWritten_command;
 	timespec lastWritten_timeout;
 	std::string lastCommand("");
@@ -168,9 +168,11 @@ void* TimeThread(void* n)
 
 		// Timeouts.
 		if(msec_elapsed(t, MSECONDS_TIMEOUT)) {
-			if(lastCommandType != COMMAND_FROM_TIMEOUT) {
+			if(lastCommandType != COMMAND_FROM_TIMEOUT || 
+					msec_elapsed(lastWritten_timeout, 100)) {
 				lastCommandType = COMMAND_FROM_TIMEOUT;
 				robot_send_command("e");
+				clock_gettime(CLOCK_REALTIME, &lastWritten_timeout);
 				std::cout << "timeout" << std::endl;
 			}
 			continue;
