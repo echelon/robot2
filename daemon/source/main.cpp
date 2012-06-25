@@ -4,7 +4,6 @@
 #include <string>
 #include <iostream>
 #include <stdexcept>
-//#include <unistd.h>
 #include <stdio.h> // TODO: Remove
 #include <time.h> // Get system time, sleep()
 #include <cstdlib>
@@ -85,6 +84,39 @@ bool msec_elapsed(timespec then, int ms)
 }
 
 /**
+ * Newer shared stuff.
+ */
+pthread_mutex_t messageMut = PTHREAD_MUTEX_INITIALIZER;
+std::string messageStr = "";
+timespec messageTime;
+
+
+void robot_send_command(const char* msg)
+{
+	std::string command = "";
+
+	if(!strcmp(msg, "w")) {
+		command = "mogo 1:10 2:10\r";
+	}
+	else if(!strcmp(msg, "s")) {
+		command = "mogo 1:-10 2:-10\r";
+	}
+	else if(!strcmp(msg, "a")) {
+		command = "mogo 1:10 2:-10\r"; // TODO: Not sure of direction
+	}
+	else if(!strcmp(msg, "d")) {
+		command = "mogo 1:-10 2:10\r";
+	}
+	else if(!strcmp(msg, "e")) {
+		command = "mogo 1:0 2:0\r";
+	}
+
+	if(command.length()) {
+		robot->write(command);
+	}
+
+}
+/**
  * Thread that responds to ZMQ messages and relays them 
  * to the robot.
  */
@@ -95,38 +127,34 @@ void* ZmqServerThread(void* n)
     zmq::socket_t socket(context, ZMQ_REP);
     socket.bind("tcp://*:5555");
 
-	std::string commandType_old = ""; // FIXME: Meh
-	std::string commandType = ""; // FIXME: Meh
-	timespec timeLastCommand_written;
-
 	// TODO: This is going to have to be a whole lot more robust. ie, 
 	// 		 auto shutdown of the motors, heuristics, direct control vs 
 	// 		 custom protocol (in JSON), etc. 
 	// TODO: Should the serial motor control be a separate thread? 
+	//			I think so...
 	while(1) 
 	{
         zmq::message_t request;
 		char* d = 0;
 		std::string msg("");
+		std::string commandType("");
 
         //  Wait for next request from client
         socket.recv(&request);
-		/*std::cout << std::endl << "========================" << std::endl;
-        std::cout << "Received Message: ";
-		std::cout << (char*)request.data() << std::endl;*/
-
-		// TODO: REORGANIZE
-		// TODO: Should go into class, wrapped in get() and set()
-		pthread_mutex_lock(&tlMutex);
-		timespec timeLastCommand_old = timeLastCommand;
-		clock_gettime(CLOCK_REALTIME, &timeLastCommand);
-		lastCommandType = COMMAND_FROM_NETWORK;
-		pthread_mutex_unlock(&tlMutex);
-
-		commandType_old = commandType;
-
 		d = (char*)request.data();
 
+		pthread_mutex_lock(&messageMut);
+		messageStr = d;
+		clock_gettime(CLOCK_REALTIME, &messageTime);
+		pthread_mutex_unlock(&messageMut);
+
+        // Send reply back to client
+		// TODO: Fix so not required.
+        zmq::message_t reply(5);
+        memcpy((void *)reply.data(), "messg", 5);
+        socket.send(reply);
+
+		/*
 		if(!strcmp(d, "w")) {
 			msg = "mogo 1:10 2:10\r";
 			commandType = "w";
@@ -151,11 +179,11 @@ void* ZmqServerThread(void* n)
 		int MSECONDS_TIMEOUT = 300;
 
 		if(msg.length()) {
-			/*if(lastCommandType == COMMAND_FROM_TIMEOUT) {
+			if(lastCommandType == COMMAND_FROM_TIMEOUT) {
 				std::cout << ">>> Start Command" << std::endl;
 				robot->write(msg);
 				clock_gettime(CLOCK_REALTIME, &timeLastCommand_written);
-			}*/
+			}
 			// Make sure we don't flood the robot with a constant stream
 			if(msec_elapsed(timeLastCommand_written, MSECONDS_TIMEOUT)) {
 				std::cout << ">>> Command" << std::endl;
@@ -168,12 +196,7 @@ void* ZmqServerThread(void* n)
 				robot->write(msg);
 				clock_gettime(CLOCK_REALTIME, &timeLastCommand_written);
 			}
-		}
-
-        //  Send reply back to client
-        zmq::message_t reply(5);
-        memcpy((void *)reply.data(), "World", 5);
-        socket.send(reply);
+		}*/
     }
 
 	pthread_exit(0);
@@ -182,31 +205,71 @@ void* ZmqServerThread(void* n)
 /**
  * Thread that responds to certain timeouts and relays
  * them to the robot.
+ * TODO/FIXME: RENAME
  */
 void* TimeThread(void* n)
 {
 	int MSECONDS_TIMEOUT = 400;
+	timespec lastWritten_command;
+	timespec lastWritten_timeout;
+	std::string lastCommand("");
 
-	while(1) {
+	while(1)
+	{
+		timespec t;
+		std::string m;
 
-		if(msec_elapsed(timeLastCommand, MSECONDS_TIMEOUT)) {
+		pthread_mutex_lock(&messageMut);
+		t = messageTime;
+		m = messageStr;
+		pthread_mutex_unlock(&messageMut);
 
-			if(lastCommandType == COMMAND_FROM_TIMEOUT) {
-				continue;
+		// Timeouts.
+		if(msec_elapsed(t, MSECONDS_TIMEOUT)) {
+			if(lastCommandType != COMMAND_FROM_TIMEOUT) {
+				lastCommandType = COMMAND_FROM_TIMEOUT;
+				robot_send_command("e");
+				std::cout << "timeout" << std::endl;
 			}
-
-			pthread_mutex_lock(&tlMutex);
-			lastCommandType = COMMAND_FROM_TIMEOUT;
-			pthread_mutex_unlock(&tlMutex);
-
-			std::cout << "Timeout!!!!!" << std::endl;
-			robot->write("mogo 1:0 2:0\r");
-
-			// DO NOT FLOOD SERIAL WITH SHUTDOWN COMMANDS!
-			// Here's an easy hack not to ...
-			//sleep(1); 
+			continue;
 		}
 
+		// Commands.
+		if(m.length()) {
+			std::cout << "messg" << std::endl;
+
+			if(msec_elapsed(lastWritten_command, 300)) {
+				robot_send_command(m.c_str());
+				clock_gettime(CLOCK_REALTIME, &lastWritten_command);
+			}
+			else if(lastCommand.compare(m)) {
+				robot_send_command(m.c_str());
+				clock_gettime(CLOCK_REALTIME, &lastWritten_command);
+			}
+			lastCommand = m;
+			lastCommandType = COMMAND_FROM_NETWORK;
+		}
+
+
+		/*if(msg.length()) {
+			if(lastCommandType == COMMAND_FROM_TIMEOUT) {
+				std::cout << ">>> Start Command" << std::endl;
+				robot->write(msg);
+				clock_gettime(CLOCK_REALTIME, &timeLastCommand_written);
+			}
+			// Make sure we don't flood the robot with a constant stream
+			if(msec_elapsed(timeLastCommand_written, MSECONDS_TIMEOUT)) {
+				std::cout << ">>> Command" << std::endl;
+				robot->write(msg);
+				clock_gettime(CLOCK_REALTIME, &timeLastCommand_written);
+			}
+			// TODO: Just put in one if. For now it's debugging. 
+			else if(commandType.compare(commandType_old)) { 
+				std::cout << ">>> New command" << std::endl;
+				robot->write(msg);
+				clock_gettime(CLOCK_REALTIME, &timeLastCommand_written);
+			}
+		}*/
 	}
 
 	pthread_exit(0);
