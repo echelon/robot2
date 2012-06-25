@@ -67,6 +67,18 @@ timespec shutdownTime; // XXX: BETTER?
 pthread_mutex_t lastCommandMutex = PTHREAD_MUTEX_INITIALIZER;
 
 /**
+ * See if a number of milliseconds has gone past.
+ */
+bool time_elapsed(timespec t, int ms)
+{
+	timespec now;
+	clock_gettime(CLOCK_REALTIME, &now);
+
+ 	// TODO TODO	
+	return false;
+}
+
+/**
  * Thread that responds to ZMQ messages and relays them 
  * to the robot.
  */
@@ -130,7 +142,7 @@ void* ZmqServerThread(void* n)
 			commandType = "e";
 		}
 
-		int MESSAGE_SECONDS = 2;
+		int MESSAGE_SECONDS = 1;
 
 		if(msg.length()) {
 			if(lastCommandType == COMMAND_FROM_TIMEOUT) {
@@ -186,7 +198,7 @@ void* TimeThread(void* n)
 		//if(now.tv_sec - then >= 1) {
 		/*	&& 
 		   now.tv_nsec > shutdownTime.tv_nsec) {*/
-		int SECONDS_TIMEOUT = 2;
+		int SECONDS_TIMEOUT = 1;
 
 		if(now.tv_sec - timeLastCommand.tv_sec > SECONDS_TIMEOUT ) {
 
