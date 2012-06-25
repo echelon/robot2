@@ -67,15 +67,21 @@ timespec shutdownTime; // XXX: BETTER?
 pthread_mutex_t lastCommandMutex = PTHREAD_MUTEX_INITIALIZER;
 
 /**
- * See if a number of milliseconds has gone past.
+ * See if a number of milliseconds has elapsed since the timestamp.
  */
-bool time_elapsed(timespec t, int ms)
+bool msec_elapsed(timespec then, int ms)
 {
 	timespec now;
+	long now_ms;
+	long then_ms;
+
 	clock_gettime(CLOCK_REALTIME, &now);
 
- 	// TODO TODO	
-	return false;
+	// Create millisecond-resolution timestamps
+	now_ms = now.tv_sec * 1000 + now.tv_nsec / 1000000;
+	then_ms = then.tv_sec * 1000 + then.tv_nsec / 1000000;
+
+	return (now_ms - then_ms > ms);
 }
 
 /**
@@ -91,7 +97,7 @@ void* ZmqServerThread(void* n)
 
 	std::string commandType_old = ""; // FIXME: Meh
 	std::string commandType = ""; // FIXME: Meh
-	//timespec lastCommandTime;
+	timespec timeLastCommand_written;
 
 	// TODO: This is going to have to be a whole lot more robust. ie, 
 	// 		 auto shutdown of the motors, heuristics, direct control vs 
@@ -142,23 +148,25 @@ void* ZmqServerThread(void* n)
 			commandType = "e";
 		}
 
-		int MESSAGE_SECONDS = 1;
+		int MSECONDS_TIMEOUT = 400;
 
 		if(msg.length()) {
 			if(lastCommandType == COMMAND_FROM_TIMEOUT) {
 				std::cout << ">>> Start Command" << std::endl;
 				robot->write(msg);
+				clock_gettime(CLOCK_REALTIME, &timeLastCommand_written);
 			}
 			// Make sure we don't flood the robot with a constant stream
-			else if(timeLastCommand.tv_sec - timeLastCommand_old.tv_sec > 
-					MESSAGE_SECONDS) {
+			else if(msec_elapsed(timeLastCommand_written, MSECONDS_TIMEOUT)) {
 				std::cout << ">>> Command" << std::endl;
 				robot->write(msg);
+				clock_gettime(CLOCK_REALTIME, &timeLastCommand_written);
 			}
 			// TODO: Just put in one if. For now it's debugging. 
 			else if(commandType.compare(commandType_old)) { 
 				std::cout << ">>> New command" << std::endl;
 				robot->write(msg);
+				clock_gettime(CLOCK_REALTIME, &timeLastCommand_written);
 			}
 		}
 
@@ -177,30 +185,11 @@ void* ZmqServerThread(void* n)
  */
 void* TimeThread(void* n)
 {
-	timespec now;
-	//timespec shutdown;
+	int MSECONDS_TIMEOUT = 400;
 
 	while(1) {
-		clock_gettime(CLOCK_REALTIME, &now);
 
-		//std::cout << "Seconds: " << now.tv_sec << std::endl;
-
-		// TODO - move into own class
-		//pthread_mutex_lock(&lastCommandMutex);
-		//shutdown = shutdownTime;
-		//pthread_mutex_unlock(&lastCommandMutex);
-
-		/*std::cout << "Now:\t\t" << now.tv_nsec << std::endl;
-		std::cout << "Shutdown:\t" << shutdown.tv_nsec << std::endl;
-		std::cout << std::endl;*/
-
-		// Shutdown motors for not being actively controlled
-		//if(now.tv_sec - then >= 1) {
-		/*	&& 
-		   now.tv_nsec > shutdownTime.tv_nsec) {*/
-		int SECONDS_TIMEOUT = 1;
-
-		if(now.tv_sec - timeLastCommand.tv_sec > SECONDS_TIMEOUT ) {
+		if(msec_elapsed(timeLastCommand, MSECONDS_TIMEOUT)) {
 
 			if(lastCommandType == COMMAND_FROM_TIMEOUT) {
 				continue;
@@ -210,6 +199,7 @@ void* TimeThread(void* n)
 			lastCommandType = COMMAND_FROM_TIMEOUT;
 			pthread_mutex_unlock(&tlMutex);
 
+			std::cout << "Timeout!!!!!" << std::endl;
 			robot->write("mogo 1:0 2:0\r");
 
 			// DO NOT FLOOD SERIAL WITH SHUTDOWN COMMANDS!
