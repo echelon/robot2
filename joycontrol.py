@@ -19,21 +19,9 @@ A work in progress.
 #	Printing is done in a different thread than SDL, which may
 #	cause printing to appear slow. In reality, it isn't. 
 
-import zmq
 import sys
 import pygame
-
-def connect_robot_daemon(host = 'tcp://localhost:5555'):
-	"""
-	Connect to the robot deamon and return the socket. 
-	"""
-	# TODO: Error handling
-	# TODO: More sophisticated ZeroMQ usage
-	# TODO: Wrap more of zmq capabilities in a module 
-	context = zmq.Context()
-	socket = context.socket(zmq.REQ)
-	socket.connect(host)
-	return socket
+from zmq_connect import *
 
 def joystick_handle(e):
 	if e.type == pygame.JOYAXISMOTION:

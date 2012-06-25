@@ -18,9 +18,9 @@ Questions:
 A work in progress.
 """
 
-import zmq
 import sys
 #import select # XXX: Investigate 'select' library. 
+from zmq_connect import *
 
 def getch():
 	"""
@@ -41,12 +41,7 @@ def main():
 	Main
 	On keypress, sends robot commands to daemon.
 	"""
-	context = zmq.Context()
-
-	# Socket to talk to server
-	print 'Connecting to server.'
-	socket = context.socket(zmq.REQ)
-	socket.connect('tcp://localhost:5555')
+	socket = connect_robot_daemon()
 
 	print 'Input keypresses; \'q\' to exit.'
 
