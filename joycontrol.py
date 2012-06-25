@@ -19,6 +19,9 @@ A work in progress.
 #	Printing is done in a different thread than SDL, which may
 #	cause printing to appear slow. In reality, it isn't. 
 
+# FIXME/TODO ******
+# Joystick control is going to need far longer timeouts for shutdown.
+
 import sys
 import pygame
 from zmq_connect import *
@@ -61,25 +64,34 @@ def main():
 				if not js.get_button(i):
 					continue
 
+				msg = None
+
 				# Up, Right, Down, Left (respectively)
 				if i in [4, 5, 6, 7]:
 					if i == 4:
-						socket.send("w")
+						msg = "w"
 					elif i == 5:
-						socket.send("d")
+						msg = "d"
 					elif i == 6:
-						socket.send("s")
+						msg = "s"
 					elif i == 7:
-						socket.send("a")
-
-					message = socket.recv()
-					continue
+						msg = "a"
 
 				# Triangle, Circle, X, Square (respectively)
 				elif i in [12, 13, 14, 15]:
-					socket.send("e") # Stop motors
-					message = socket.recv()
-					continue
+					msg = "e" # Stop motors
+
+				# Use PS button to shut down program
+				elif i == 16:
+					print "Sending stop and exiting script"
+					socket.send("e")
+					socket.recv()
+					sys.exit()
+
+				if msg:
+					#print "Sending control code: %s" % msg
+					socket.send(msg)
+					socket.recv() # TODO: Fix so I won't need
 
 			#joystick_handle(e)
 			#socket.send('e')

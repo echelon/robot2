@@ -148,16 +148,16 @@ void* ZmqServerThread(void* n)
 			commandType = "e";
 		}
 
-		int MSECONDS_TIMEOUT = 400;
+		int MSECONDS_TIMEOUT = 300;
 
 		if(msg.length()) {
-			if(lastCommandType == COMMAND_FROM_TIMEOUT) {
+			/*if(lastCommandType == COMMAND_FROM_TIMEOUT) {
 				std::cout << ">>> Start Command" << std::endl;
 				robot->write(msg);
 				clock_gettime(CLOCK_REALTIME, &timeLastCommand_written);
-			}
+			}*/
 			// Make sure we don't flood the robot with a constant stream
-			else if(msec_elapsed(timeLastCommand_written, MSECONDS_TIMEOUT)) {
+			if(msec_elapsed(timeLastCommand_written, MSECONDS_TIMEOUT)) {
 				std::cout << ">>> Command" << std::endl;
 				robot->write(msg);
 				clock_gettime(CLOCK_REALTIME, &timeLastCommand_written);
