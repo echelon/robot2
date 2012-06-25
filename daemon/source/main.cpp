@@ -1,3 +1,18 @@
+/**
+ * Copyright (c) 2012 Brandon Thomas
+ * http://possibilistic.org | echelon@gmail.com
+ * See README.md for license information. 
+ *
+ * Description
+ * 
+ * 		main
+ * This is the main program that controls initialization and spawns the 
+ * threads that control the robot over serial and listen for ZeroMQ messages.
+ *
+ * Linux-specific.  
+ * 
+ * TODO: This class is a mess. Clean it up. 
+ */
 
 #include <zmq.hpp>
 #include <pthread.h>
