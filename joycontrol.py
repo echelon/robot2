@@ -1,38 +1,28 @@
 #!/usr/bin/env python
+
 """
 Relay Joystick events as instructions to the robot.
+A work in progress. Need to support more than just PS3 controller.
 
 Questions: 
 	* Should the script ramp up speed the longer something is pressed, 
 	  or should the daemon do that work? 
 
 	* Factor in the degree to which the joystick is pressed? 
-
-	* Should the script send a 'stop' command, or should the daemon do
-	  that work as well? (Daemon assumes that when no input is received
-	  after X amount of time, it should shut down the motors.)
-
-A work in progress.
 """
 
-# XXX: **Important Note about PyGame:
-#	Printing is done in a different thread than SDL, which may
-#	cause printing to appear slow. In reality, it isn't. 
+# XXX: **Important Note about PyGame**
+#	Printing is done in a different thread than SDL, which may cause printing
+#	to the console to appear slow. In reality, it isn't. Keep this in mind
+#	when debugging the program. 
 
-# FIXME/TODO ******
-# Joystick control is going to need far longer timeouts for shutdown.
-# XXX: Actually, no. There is no maintained 'keydown' event. Events only fire 
-# once! I'll need to write the script to be mindful of that!
+# TODO: Support other joysticks and gamepads. 
+
+# FIXME: There is some latency with the joypad that causes motor stuttering. 
 
 import sys
 import pygame
 from zmq_connect import *
-
-def joystick_handle(e):
-	if e.type == pygame.JOYAXISMOTION:
-		print "Motion"
-		pass
-	print "TODO"
 
 def main():
 	"""
@@ -44,66 +34,72 @@ def main():
 	pygame.joystick.init()
 	pygame.display.init()
 
-	count = pygame.joystick.get_count()
-	if not count:
-		print "No Joystick!"
+	if not pygame.joystick.get_count():
+		print "No Joystick detected!"
 		sys.exit()
-
-	print count
 
 	js = pygame.joystick.Joystick(0)
 	js.init()
+
 	print js.get_name()
 
 	numButtons = js.get_numbuttons()
-	print "NumButtons: %d" % numButtons
 
+	debugFile = open("DebugFile.txt", "w+")
+
+	"""
+	Events are being sent to Pygame as long as a button is pressed
+	or a joystick is held. KEYUP and KEYDOWN only fire once, but there
+	are still event types sent.
+	"""
 	while True:
 		e = pygame.event.wait()
-		if e.type in [pygame.JOYBUTTONDOWN]:
 
-			for i in range(numButtons):
-				if not js.get_button(i):
-					continue
+		# Not sure why Axis 8 continues to be reported.
+		if e.type == pygame.JOYAXISMOTION and e.axis == 8:
+			continue
 
-				msg = None
+		debugFile.write(str(e)+"\n")
+		debugFile.flush()
 
-				# Up, Right, Down, Left (respectively)
-				if i in [4, 5, 6, 7]:
-					if i == 4:
-						msg = "w"
-					elif i == 5:
-						msg = "d"
-					elif i == 6:
-						msg = "s"
-					elif i == 7:
-						msg = "a"
+		if e.type == pygame.JOYAXISMOTION:
+			print e.value
+			print e.axis
+			#debugFile.write(str(e)+"\n")
+			#debugFile.flush()
 
-				# Triangle, Circle, X, Square (respectively)
-				elif i in [12, 13, 14, 15]:
-					msg = "e" # Stop motors
+		# Joypad Buttons. 
+		for i in range(numButtons):
+			if not js.get_button(i):
+				continue
 
-				# Use PS button to shut down program
-				elif i == 16:
-					print "Sending stop and exiting script"
-					socket.send("e")
-					socket.recv()
-					sys.exit()
+			msg = None
 
-				if msg:
-					#print "Sending control code: %s" % msg
-					socket.send(msg)
-					socket.recv() # TODO: Fix so I won't need
+			# Up, Right, Down, Left (respectively)
+			if i in [4, 5, 6, 7]:
+				if i == 4:
+					msg = "w"
+				elif i == 5:
+					msg = "d"
+				elif i == 6:
+					msg = "s"
+				elif i == 7:
+					msg = "a"
 
-			#joystick_handle(e)
-			#socket.send('e')
+			# Triangle, Circle, X, Square (respectively)
+			# Use these to stop the robot motors
+			elif i in [12, 13, 14, 15]:
+				msg = "e"
 
-		#if ch in ['q', 'Q']:
-		#	sys.exit()
+			# Use PS button to shut down program
+			elif i == 16:
+				print "Sending stop and exiting script"
+				socket.send("e")
+				socket.recv()
+				sys.exit()
 
-		
-		#  Get the reply.
-		#message = socket.recv()
-		#print "Received reply [", message, "]"
+			if msg:
+				socket.send(msg)
+				socket.recv() # FIXME: Fix comms model so I won't need
 
 if __name__ == '__main__': main()
