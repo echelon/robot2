@@ -30,6 +30,15 @@
  */
 const int MSECONDS_TIMEOUT = 200;
 
+// Non-differential movement
+// TODO: Not sure of left and right directions. 
+const std::string ROBOT_FORWARD  = "mogo 1:50 2:50\r";
+const std::string ROBOT_BACKWARD = "mogo 1:-50 2:-50\r";
+const std::string ROBOT_LEFT 	 = "mogo 1:50 2:-50\r";
+const std::string ROBOT_RIGHT	 = "mogo 1:-50 2:50\r";
+const std::string ROBOT_STOP	 = "mogo 1:0 2:0\r";
+
+
 /**
  * Nasty globals
  */
@@ -70,19 +79,19 @@ void robot_send_command(const char* msg)
 	std::string command = "";
 
 	if(!strcmp(msg, "w")) {
-		command = "mogo 1:10 2:10\r";
+		command = ROBOT_FORWARD;
 	}
 	else if(!strcmp(msg, "s")) {
-		command = "mogo 1:-10 2:-10\r";
+		command = ROBOT_BACKWARD;
 	}
 	else if(!strcmp(msg, "a")) {
-		command = "mogo 1:10 2:-10\r"; // TODO: Not sure of direction
+		command = ROBOT_LEFT;
 	}
 	else if(!strcmp(msg, "d")) {
-		command = "mogo 1:-10 2:10\r";
+		command = ROBOT_RIGHT;
 	}
 	else if(!strcmp(msg, "e")) {
-		command = "mogo 1:0 2:0\r";
+		command = ROBOT_STOP;
 	}
 
 	if(command.length()) {
