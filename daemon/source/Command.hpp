@@ -1,11 +1,32 @@
 #ifndef ROBOT2_Command
 #define ROBOT2_Command
 
+/**
+ * Copyright (c) 2012 Brandon Thomas
+ * http://possibilistic.org | echelon@gmail.com
+ * See README.md for license information. 
+ *
+ * Description
+ * 
+ * 		Command
+ * This class represents commands that are sent over the wire via ZeroMQ or 
+ * some other messaging system. The only objective of this class is to 
+ * parse commands and make their command type and parameters available to the 
+ * client. This class knows nothing about robot specifics or any kind of 
+ * instruction set or other low-level robot protocol. 
+ *
+ * Commands may be encoded as very simple strings or JSON objects.  
+ * 
+ * TODO: This class is a mess. Clean it up. 
+ * TODO: Documentation on JSON protocol and simple string protocol. 
+ */
+
 #include <string>
 #include <vector>
 
 /**
  * All of the command types.
+ * FIXME: Some are not yet fully supported (or supported at all)
  */
 enum CommandType
 {
@@ -28,16 +49,21 @@ enum CommandType
 
 // TODO: Const-correctness
 
+/**
+ * The command class.
+ */
 class Command
 {
 
 	public:
 		/**
-		 * CTOR : Empty.
+		 * CTOR
+		 * Empty command. 
 		 */
 		Command() {};
 
 		/**
+		 * CTOR
 		 * Parse a JSON string into a command.
 		 */
 		Command(std::string cmd);
@@ -60,17 +86,27 @@ class Command
 		std::string getInstruction();
 
 		/**
-		 * Test for equality.
-		 * TODO: Must test parameters too!
+		 * Compare two commands. 
+		 * Considers command type and all parameters. 
 		 */
 		bool operator==(const Command& cmd) const;
 
 	private:
 
+		/**
+		 * The type of instruction.
+		 */
 		CommandType type;
 
+		/**
+		 * Only integer parameters are supported as of now.
+		 */
 		std::vector<int> params;
 
+		/**
+		 * Helper method to parse JSON commands. 
+		 * Uses nanojson library.
+		 */
 		void parseJson(std::string json);
 };
 

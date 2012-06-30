@@ -1,9 +1,27 @@
 #ifndef ROBOT2_Serializer
 #define ROBOT2_Serializer
 
-#include <string>
-//class Serial;
+/**
+ * Copyright (c) 2012 Brandon Thomas
+ * http://possibilistic.org | echelon@gmail.com
+ * See README.md for license information. 
+ *
+ * Description
+ * 
+ * 		Serializer
+ * This class represents the Robotics Connection Serializer hardware 
+ * instruction set. Support is very far from complete, but this covers the 
+ * use cases that I require. 
+ *
+ * Commands to the robot are relayed over serial and may be made from the 
+ * simpe method call interface [motor(), blink(), etc], a raw instruction
+ * input method [doRaw()], or a Command object [doCommand()]. 
+ * 
+ * TODO: This class is a mess. Clean it up. 
+ */
+
 #include "Serial.hpp"
+#include <string>
 
 class Serializer
 {
@@ -90,8 +108,6 @@ class Serializer
 		 * Doesn't own it (for now!)
 		 */
 		Serial* serial;
-
-
 };
 
 #endif

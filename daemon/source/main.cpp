@@ -23,10 +23,10 @@
 #include <time.h> // Get system time
 #include <cstdlib>
 #include <cstring> // TODO: Ugh, remove
+
 #include "Serial.hpp"
 #include "Serializer.hpp"
 #include "Command.hpp"
-#include "picojson.h"
 
 /**
  * Constants
