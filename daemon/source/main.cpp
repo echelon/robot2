@@ -25,6 +25,7 @@
 #include <cstring> // TODO: Ugh, remove
 #include "Serial.hpp"
 #include "Serializer.hpp"
+#include "Command.hpp"
 #include "picojson.h"
 
 /**
@@ -48,6 +49,7 @@ Serializer* robot = 0;
 
 // These are for communicating between threads.
 pthread_mutex_t messageMut = PTHREAD_MUTEX_INITIALIZER;
+Command command;
 std::string messageStr = "";
 timespec messageTime;
 
@@ -96,6 +98,35 @@ void robot_send_command(const char* msg)
 	}
 }
 
+void robot_send_command_2(Command cmd)
+{
+	// FIXME: No check for paramters actually being present/valid
+	std::vector<int> params = cmd.getParams();
+
+	switch(cmd.getType()) {
+		case COMMAND_NONE:
+			break;
+		case COMMAND_MOTOR:
+			robot->motor(params[0], params[1]);
+			break;
+		case COMMAND_BLINK:
+			robot->blink(params[0], params[1]);
+			break;
+		case COMMAND_BLINK_ONE:
+			robot->blinkOne(params[0], params[1]);
+			break;
+		case COMMAND_STOP:
+			robot->stop();
+			break;
+		case COMMAND_SIMPLE_W:
+		case COMMAND_SIMPLE_A:
+		case COMMAND_SIMPLE_S:
+		case COMMAND_SIMPLE_D:
+		case COMMAND_SIMPLE_E:
+			break; // TODO
+	}				
+}
+
 /**
  * Thread that responds to ZMQ messages and relays them 
  * to the robot.
@@ -121,86 +152,18 @@ void* ZmqServerThread(void* n)
 
         //  Wait for next request from client
         socket.recv(&request);
+		const char* chars = static_cast<const char*>(request.data());
 
-		const char* base = static_cast<const char*>(request.data());
-        std::string json(base, base + request.size());
+		std::string str(chars);
+		Command cmd = Command(str);
 
-		std::cout << json << std::endl;
-
-		// TODO TODO TODO TODO -- TYPE CHECKING FOR JSON MUST BE VERY THOROUGH
-
-		picojson::value v, v2, v3, v4;
-
-		std::string err;
-		picojson::parse(v, base, base + strlen(base), &err);
-		if (! err.empty()) {
-			std::cerr << err << std::endl;
-		}
-
-		if(v.is<picojson::object>()) {
-			std::cout << "It's an object" << std::endl;
-		}
-
-		// XXX ????? What to do ???
-
-		const picojson::value::object& obj = v.get<picojson::object>();
-
-		for(picojson::value::object::const_iterator i = obj.begin();
-			 i != obj.end(); i++) {
-		  std::cout << i->first << ": " << i->second.to_str() << std::endl;
-		}
-
-		std::cout << obj.find("cmd")->first << std::endl;
-
-		v2 = obj.find("cmd")->second;
-
-		// XXX: GET MOTOR COMMAND ! 
-		if(v2.is<std::string>()) {
-			std::cout << "It's a string" << std::endl;
-		}
-
-		std::string cmdStr;
-		cmdStr = v2.get<std::string>();
-
-		std::cout << cmdStr << std::endl;
-
-		picojson::array arrayV;
-
-		double doubleV;
-
-		if(obj.count("params")) {
-			v2 = obj.find("params")->second; // TODO: Rename v2 to picoval
-
-			std::cout << "Has params" << std::endl;
-			if(v2.is<picojson::array>()) {
-
-				std::cout << "Has array" << std::endl;
-				arrayV = v2.get<picojson::array>();
-
-				for(int i = 0; i < arrayV.size(); i++) {
-
-					if(arrayV[i].is<double>()) {
-						doubleV = arrayV[i].get<double>();
-						std::cout << doubleV << std::endl;
-					}
-				}
-			}
-		}
-
-
-
-		//v2 = v.object["cmd"];
-		//std::cout << v2.get<std::string>() << std::endl;
-		//std::cout << v.object["cmd"].get<std::string>() << std::endl;
-
-
-
-
+		std::cout << cmd.getInstruction() << std::endl;
 
 		d = (char*)request.data();
 
 		pthread_mutex_lock(&messageMut);
 		messageStr = d;
+		command = Command(str);
 		clock_gettime(CLOCK_REALTIME, &messageTime);
 		pthread_mutex_unlock(&messageMut);
 
@@ -227,16 +190,19 @@ void* TimeThread(void* n)
 	enum LastCommand { COMMAND_FROM_NETWORK, COMMAND_FROM_TIMEOUT };
 	LastCommand lastCommandType = COMMAND_FROM_TIMEOUT;
 	std::string lastCommand("");
+	Command lastCmd;
 
 	while(1)
 	{
 		timespec t;
 		std::string m;
+		Command cmd;
 
 		// Any commands from the network? 
 		pthread_mutex_lock(&messageMut);
 		t = messageTime;
 		m = messageStr;
+		cmd = command;
 		pthread_mutex_unlock(&messageMut);
 
 		// Timeouts.
@@ -252,20 +218,24 @@ void* TimeThread(void* n)
 		}
 
 		// Commands.
-		if(m.length()) {
-			// Don't flood serial
-			if(msec_elapsed(lastWritten_command, 100)) {
-				robot_send_command(m.c_str());
-				clock_gettime(CLOCK_REALTIME, &lastWritten_command);
-			}
-			// Ensure new commands get written
-			else if(lastCommand.compare(m)) {
-				robot_send_command(m.c_str());
-				clock_gettime(CLOCK_REALTIME, &lastWritten_command);
-			}
-			lastCommand = m;
-			lastCommandType = COMMAND_FROM_NETWORK;
+		// XXX: FIXME -- this logic is encoded in three separate places :(
+
+		if(cmd.getType() == COMMAND_NONE) {
+			continue;
 		}
+		// Don't flood serial
+		if(msec_elapsed(lastWritten_command, 100)) {
+			robot_send_command_2(cmd);
+			clock_gettime(CLOCK_REALTIME, &lastWritten_command);
+		}
+		// Ensure new commands get written
+		else if(lastCommand.compare(m)) {
+			robot_send_command_2(cmd);
+			clock_gettime(CLOCK_REALTIME, &lastWritten_command);
+		}
+		lastCmd = cmd;
+		lastCommand = m;
+		lastCommandType = COMMAND_FROM_NETWORK;
 	}
 
 	pthread_exit(0);

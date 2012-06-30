@@ -18,7 +18,7 @@ stats:
 
 ### MAIN BUILD TARGET #############
 
-robotd: source/main.cpp build/Serial.o build/Serializer.o
+robotd: source/main.cpp build/Serial.o build/Serializer.o build/Command.o
 	@echo "[compile] main"
 	@$(CD) ./build && $(C) $(INC) -c ../source/main.cpp
 	@$(L) build/*.o $(LIBS) -o robotd
@@ -31,5 +31,9 @@ build/Serial.o: source/Serial.hpp source/Serial.cpp
 build/Serializer.o: source/Serializer.hpp source/Serializer.cpp
 	@echo "[compile serializer]"
 	@$(CD) ./build && $(C) $(INC) -c ../source/Serializer.cpp
+
+build/Command.o: source/Command.hpp source/Command.cpp
+	@echo "[compile command]"
+	@$(CD) ./build && $(C) $(INC) -c ../source/Command.cpp
 
 

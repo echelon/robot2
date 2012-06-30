@@ -16,7 +16,7 @@ void Serializer::blink(unsigned int rate1, unsigned int rate2)
 	serial->write(os.str());
 }
 
-void Serializer::blinkLed(unsigned int ledId, unsigned int rate)
+void Serializer::blinkOne(unsigned int ledId, unsigned int rate)
 {
 	std::ostringstream os;
 

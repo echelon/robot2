@@ -37,7 +37,7 @@ class Serializer
 		 * A non-blocking call.
 		 * TODO/FIXME: TEST
 		 */
-		void blinkLed(unsigned int ledId, unsigned int rate);
+		void blinkOne(unsigned int ledId, unsigned int rate);
 
 		/**
 		 * Set the motor velocities.
