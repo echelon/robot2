@@ -15,9 +15,17 @@ class Serializer
 		Serializer(Serial* ser): serial(ser) {};
 
 		/**
+		 * Send a raw command to the serial device.
+		 * A non-blocking call.
+		 * TODO: Auto <CR> insert?
+		 */
+		void sendRaw(std::string cmd) { serial->write(cmd); };
+
+		/**
 		 * Set two leds to blink.
 		 * Rate can be between 0 and 127. 
 		 * A non-blocking call.
+		 * TODO/FIXME: TEST
 		 */
 		void blink(unsigned int rate1, unsigned int rate2);
 
@@ -25,6 +33,7 @@ class Serializer
 		 * Set a single led to blink.
 		 * Rate can be between 0 and 127. 
 		 * A non-blocking call.
+		 * TODO/FIXME: TEST
 		 */
 		void blinkLed(unsigned int ledId, unsigned int rate);
 
