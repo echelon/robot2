@@ -18,17 +18,17 @@ stats:
 
 ### MAIN BUILD TARGET #############
 
-robotd: source/main.cpp Serial.o Serializer.o
+robotd: source/main.cpp build/Serial.o build/Serializer.o
 	@echo "[compile] main"
 	@$(CD) ./build && $(C) $(INC) -c ../source/main.cpp
 	@$(L) build/*.o $(LIBS) -o robotd
 	@chmod +x robotd
 
-Serial.o: source/Serial.hpp source/Serial.cpp
+build/Serial.o: source/Serial.hpp source/Serial.cpp
 	@echo "[compile serial]"
 	@$(CD) ./build && $(C) $(INC) -c ../source/Serial.cpp
 
-Serializer.o: source/Serializer.hpp source/Serializer.cpp
+build/Serializer.o: source/Serializer.hpp source/Serializer.cpp
 	@echo "[compile serializer]"
 	@$(CD) ./build && $(C) $(INC) -c ../source/Serializer.cpp
 

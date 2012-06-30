@@ -1,7 +1,9 @@
 #ifndef ROBOT2_Serializer
 #define ROBOT2_Serializer
 
-class Serial;
+#include <string>
+//class Serial;
+#include "Serial.hpp"
 
 class Serializer
 {
