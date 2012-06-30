@@ -24,6 +24,7 @@
 #include <cstdlib>
 #include <cstring> // TODO: Ugh, remove
 #include "Serial.hpp"
+#include "Serializer.hpp"
 
 /**
  * Constants
@@ -42,7 +43,7 @@ const std::string ROBOT_STOP	 = "mogo 1:0 2:0\r";
 /**
  * Nasty globals
  */
-Serial* robot = 0;
+Serializer* robot = 0;
 
 // These are for communicating between threads.
 pthread_mutex_t messageMut = PTHREAD_MUTEX_INITIALIZER;
@@ -76,26 +77,21 @@ bool msec_elapsed(timespec then, int ms)
  */
 void robot_send_command(const char* msg)
 {
-	std::string command = "";
-
+	// FIXME: Very basic, unsophisticated
 	if(!strcmp(msg, "w")) {
-		command = ROBOT_FORWARD;
+		robot->motor(100, 100);
 	}
 	else if(!strcmp(msg, "s")) {
-		command = ROBOT_BACKWARD;
+		robot->motor(-100, -100);
 	}
 	else if(!strcmp(msg, "a")) {
-		command = ROBOT_LEFT;
+		robot->motor(100, 0);
 	}
 	else if(!strcmp(msg, "d")) {
-		command = ROBOT_RIGHT;
+		robot->motor(0, 100);
 	}
 	else if(!strcmp(msg, "e")) {
-		command = ROBOT_STOP;
-	}
-
-	if(command.length()) {
-		robot->write(command);
+		robot->stop();
 	}
 }
 
@@ -202,9 +198,10 @@ void* TimeThread(void* n)
  * Try to open one of the first ten serial ports.
  * It's probably the first serial device (0), but just in case...
  */
-Serial* openSerial()
+Serializer* openSerial()
 {
 	Serial* s = 0;
+	Serializer* r = 0;
 	
 	for(int i = 0; i < 10; i++) {
 		s = new Serial(i);
@@ -220,7 +217,12 @@ Serial* openSerial()
 		}
 		break;
 	}
-	return s;
+
+	if(s) {
+		r = new Serializer(s); // FIXME: This will memleak, but it's okay for now
+	}
+
+	return r;
 }
 
 /**
