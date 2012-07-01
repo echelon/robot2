@@ -28,6 +28,9 @@ from zmq_connect import *
 # XXX: The 'pause' when switching keytypes is due to the keyboard delay
 # Whenever a new key is pressed, the terminal causes a short pause. 
 
+# 1000, 500 won't work. -- 200 seems to be breaking point
+SPEED_MAX = 50
+
 def getch():
 	"""
 	Grab a character from the console. (Unix-only)
@@ -118,19 +121,26 @@ def main_pygame():
 		e = pygame.key.get_pressed()
 
 		if e[pygame.K_w]:
-			#send_robot('w')
-			send_robot_json('motor', [100, 100])
+			send_robot_json('motor', [SPEED_MAX, SPEED_MAX])
 		elif e[pygame.K_a]:
-			#send_robot('a')
-			send_robot_json('motor', [100, 0])
+			send_robot_json('motor', [SPEED_MAX, 0])
 		elif e[pygame.K_s]:
-			#send_robot('s')
-			send_robot_json('motor', [-100, -100])
+			send_robot_json('motor', [-SPEED_MAX, -SPEED_MAX])
 		elif e[pygame.K_d]:
-			#send_robot('d')
-			send_robot_json('motor', [0, 100])
+			send_robot_json('motor', [0, SPEED_MAX])
+
+		# Blinking
+		elif e[pygame.K_u]:
+			send_robot_json('blink', [0, 0])
+		elif e[pygame.K_i]:
+			send_robot_json('blink', [50, 50])
+		elif e[pygame.K_o]:
+			send_robot_json('blink', [100, 100])
+		elif e[pygame.K_p]:
+			send_robot_json('blink', [127, 127])
+
+		# Stop and Exit
 		elif e[pygame.K_e]:
-			#send_robot('e')
 			send_robot_json('stop')
 		elif e[pygame.K_q]:
 			print "Exiting..."

@@ -11,40 +11,6 @@ Command::Command(std::string cmd):
 	parseJson(cmd);
 }
 
-std::string Command::getInstruction()
-{
-	std::string cmd;
-	std::ostringstream os;
-
-	switch(type) {
-		case COMMAND_NONE:
-			break;
-		case COMMAND_MOTOR:
-			os << "mogo 1:" << params[0] << " 2:" << params[1] << "\r";
-			cmd = os.str();
-			break;
-		case COMMAND_BLINK:
-			os << "blink 1:" << params[0] << " 2:" << params[1] << "\r";
-			cmd = os.str();
-			break;
-		case COMMAND_BLINK_ONE:
-			os << "blink " << params[0] << ": " << params[1] << "\r";
-			cmd = os.str();
-			break;
-		case COMMAND_STOP:
-			cmd = "stop\r";
-			break;
-
-		case COMMAND_SIMPLE_W:
-		case COMMAND_SIMPLE_A:
-		case COMMAND_SIMPLE_S:
-		case COMMAND_SIMPLE_D:
-		case COMMAND_SIMPLE_E:
-			break; // TODO
-	}
-	return cmd;
-}
-
 bool Command::operator==(const Command& cmd) const
 {
 	if(type != cmd.type) {

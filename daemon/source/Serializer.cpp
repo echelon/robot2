@@ -1,8 +1,50 @@
 #include "Serializer.hpp"
+#include "Command.hpp"
 #include "Serial.hpp"
 
 #include <string>
 #include <sstream>
+#include <vector>
+#include <iostream>
+
+std::string Serializer::getInstruction(Command cmd)
+{
+	std::string instr;
+	std::ostringstream os;
+	std::vector<int> params = cmd.getParams();
+
+	switch(cmd.getType()) {
+		case COMMAND_NONE:
+			break;
+		case COMMAND_MOTOR:
+			os << "mogo 1:" << params[0] << " 2:" << params[1] << "\r";
+			//os << "pwm 1:" << params[0] << " 2:" << params[1] << "\r";
+			instr = os.str();
+			break;
+		case COMMAND_BLINK:
+			os << "blink 1:" << params[0] << " 2:" << params[1] << "\r";
+			instr = os.str();
+			break;
+		case COMMAND_BLINK_ONE:
+			os << "blink " << params[0] << ": " << params[1] << "\r";
+			instr = os.str();
+			break;
+		case COMMAND_STOP:
+			instr = "stop\r";
+			break;
+
+		case COMMAND_SIMPLE_W:
+		case COMMAND_SIMPLE_A:
+		case COMMAND_SIMPLE_S:
+		case COMMAND_SIMPLE_D:
+		case COMMAND_SIMPLE_E:
+			break; // TODO
+	}
+
+	std::cout << instr << std::endl;
+
+	return instr;
+}
 
 void Serializer::blink(unsigned int rate1, unsigned int rate2) 
 {

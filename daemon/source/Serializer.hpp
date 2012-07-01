@@ -21,6 +21,7 @@
  */
 
 #include "Serial.hpp"
+#include "Command.hpp"
 #include <string>
 
 class Serializer
@@ -34,12 +35,35 @@ class Serializer
 		 */
 		Serializer(Serial* ser): serial(ser) {};
 
+		/* =========== Raw Instruction Interface =========== */
+
 		/**
 		 * Send a raw command to the serial device.
 		 * A non-blocking call.
 		 * TODO: Auto <CR> insert?
 		 */
 		void sendRaw(std::string cmd) { serial->write(cmd); };
+
+
+		/* =========== Command Object Interface =========== */
+
+		/**
+		 * Get the properly-formatted Serializer instruction given a Command
+		 * object. 
+		 */
+		std::string getInstruction(Command cmd);
+
+		/**
+		 * Process the command in the command object and send it to the 
+		 * Robot.
+		 * A non-blocking call. 
+		 */
+		void sendCommand(Command cmd) {
+				serial->write(getInstruction(cmd));
+		};
+
+
+		/* =========== Method Call Interface =========== */
 
 		/**
 		 * Set two leds to blink.

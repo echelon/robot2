@@ -80,12 +80,6 @@ class Command
 		std::vector<int> getParams() { return params; };
 	
 		/**
-		 * Get the properly-formatted Serializer instruction given
-		 * the current Command state. Automatically inserts <CR>
-		 */
-		std::string getInstruction();
-
-		/**
 		 * Compare two commands. 
 		 * Considers command type and all parameters. 
 		 */

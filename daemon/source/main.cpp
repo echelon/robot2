@@ -157,12 +157,12 @@ void* ZmqServerThread(void* n)
 		std::string str(chars);
 		Command cmd = Command(str);
 
-		std::cout << cmd.getInstruction() << std::endl;
+		//std::cout << cmd.getInstruction() << std::endl;
 
-		d = (char*)request.data();
+		//d = (char*)request.data();
 
 		pthread_mutex_lock(&messageMut);
-		messageStr = d;
+		//messageStr = d;
 		command = Command(str);
 		clock_gettime(CLOCK_REALTIME, &messageTime);
 		pthread_mutex_unlock(&messageMut);
@@ -225,12 +225,12 @@ void* TimeThread(void* n)
 		}
 		// Don't flood serial
 		if(msec_elapsed(lastWritten_command, 100)) {
-			robot_send_command_2(cmd);
+			robot->sendCommand(cmd);
 			clock_gettime(CLOCK_REALTIME, &lastWritten_command);
 		}
 		// Ensure new commands get written
 		else if(lastCommand.compare(m)) {
-			robot_send_command_2(cmd);
+			robot->sendCommand(cmd);
 			clock_gettime(CLOCK_REALTIME, &lastWritten_command);
 		}
 		lastCmd = cmd;
